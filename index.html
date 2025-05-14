@@ -1,0 +1,116 @@
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>Supabase Auth</title>
+</head>
+<body>
+<h1>Supabase Auth</h1>
+
+<input type="button" value="login" id="login" />
+
+
+<script>
+    const supabaseUrl = 'https://oznitilubkxsgvxrliik.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96bml0aWx1Ymt4c2d2eHJsaWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxODkyNDcsImV4cCI6MjA2Mjc2NTI0N30.tT7yhJaO16vKdKp5MsxmqLzEe5xIggYnHz2xdgWOsL0'
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+
+    async function signInWithGithub() {
+        const { data, error } = await client.auth.signInWithOAuth({
+            provider: "github",
+            options: {
+                redirectTo: "http://172.26.203.104:8000/",
+            },
+        });
+    }
+    document
+        .querySelector("#login")
+        .addEventListener("click", signInWithGithub);
+</script>
+
+<input type="button" value="logout" id="logout" />
+<script>
+    async function checkLogin() {
+        const authInfo = await client.auth.getSession();
+        const session = authInfo.data.session;
+
+        document.querySelector("#login").style.display = "none";
+        document.querySelector("#logout").style.display = "none";
+        if (session === null) {
+            document.querySelector("#login").style.display = "inline";
+        } else {
+            document.querySelector("#logout").style.display = "inline";
+        }
+    }
+    checkLogin();
+</script>
+
+<script>
+    async function signOut() {
+        const { error } = await client.auth.signOut();
+        checkLogin();
+    }
+    document.querySelector("#logout").addEventListener("click", signOut);
+</script>
+
+<div id="history"></div>
+
+<script>
+    async function refreshHistory() {
+        let { data: record, error } = await client.from("page").select("*");
+        let tag = "";
+        for (let i = 0; i < record.length; i++) {
+            tag += `<div style="margin:20px 0"><h2>${record[i].title}</h2>${record[i].body}</div>`;
+        }
+        document.querySelector("#history").innerHTML = tag;
+    }
+    refreshHistory();
+</script>
+
+<input type="button" value="create" id="create_btn" />
+
+
+<script>
+    async function recordHandler() {
+        const { data, error } = await client
+            .from("page")
+            .insert([{ title: prompt("title?"), body: prompt("body?") }]);
+        refreshHistory();
+    }
+    document
+        .querySelector("#create_btn")
+        .addEventListener("click", recordHandler);
+</script>
+
+<script>
+    async function refreshHistory() {
+        let { data: record, error } = await client.from("page").select("*");
+        let tag = "";
+        for (let i = 0; i < record.length; i++) {
+            tag += `<div style="margin:20px 0">
+           <h2>${record[i].title}</h2>${record[i].body} <p>
+             <input type="button" value="delete" onclick="
+             deleteRecord(${record[i].id})
+             " />
+</p>
+         </div>
+         `;
+        }
+        document.querySelector("#history").innerHTML = tag;
+    }
+    refreshHistory();
+</script>
+
+<script>
+    async function deleteRecord(id) {
+        const { data, error } = await client.from("page").delete().eq("id", id);
+        refreshHistory();
+    }
+</script>
+
+</body>
+</html>
